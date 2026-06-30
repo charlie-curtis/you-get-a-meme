@@ -1,0 +1,20 @@
+{
+  "name": "you-get-a-meme",
+  "version": "0.1.0",
+  "description": "A local LLM-powered meme finder and generator.",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "memes",
+    "electron",
+    "python",
+    "ollama"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^42.5.1"
+  }
+}

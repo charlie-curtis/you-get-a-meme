@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from you_get_a_meme.server import main
 
-def main() -> None:
-    print("You Get a Meme is ready for its first implementation slice.")
+
+__all__ = ["main"]

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>You Get a Meme</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="search-panel" aria-label="Meme search">
+        <div class="brand-row">
+          <div>
+            <p class="eyebrow">You Get a Meme</p>
+            <h1>Describe the situation.</h1>
+          </div>
+          <div class="status-pill" id="status-pill">Starting</div>
+        </div>
+
+        <form id="search-form" class="prompt-form">
+          <label for="situation">Situation</label>
+          <textarea
+            id="situation"
+            name="situation"
+            rows="5"
+            maxlength="400"
+            placeholder="The team says this is a quick CSS fix, then the whole layout collapses."
+          ></textarea>
+          <button type="submit">Find memes</button>
+        </form>
+      </section>
+
+      <section class="results-panel" aria-label="Meme matches">
+        <div class="results-header">
+          <p class="eyebrow">Matches</p>
+          <h2 id="results-title">Ready</h2>
+        </div>
+        <div class="results-grid" id="results-grid"></div>
+      </section>
+    </main>
+
+    <template id="candidate-template">
+      <article class="candidate-card">
+        <div class="candidate-score"></div>
+        <h3></h3>
+        <p class="fit"></p>
+        <p class="caption"></p>
+      </article>
+    </template>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

@@ -19,7 +19,7 @@ You Get a Meme is a local-first meme finder and generator. The app helps you des
 - SQLite for template metadata
 - Pillow for meme rendering
 - Ollama for local LLM calls
-- pywebview for the desktop window
+- Electron for the desktop window
 
 ## First Milestone
 
@@ -30,4 +30,14 @@ You Get a Meme is a local-first meme finder and generator. The app helps you des
 
 ## Development
 
-This repo is just scaffolded for now. The first implementation slice will likely start with the template metadata model and an Ollama client.
+Install the Python and Electron dependencies, then start the desktop shell:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+npm install
+npm start
+```
+
+Electron launches the Python API locally and loads the renderer UI. The first implementation slice has placeholder meme matches; the next slice should replace those with the template metadata model and an Ollama client.
