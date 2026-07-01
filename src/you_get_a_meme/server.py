@@ -2,17 +2,22 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from typing import Annotated
 
 import httpx
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from you_get_a_meme.catalog import MemeTemplate
 from you_get_a_meme.catalog import load_templates
 from you_get_a_meme.embeddings import EmbeddingCacheUnavailable, rank_templates_by_embedding
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+IMAGES_DIR = PROJECT_ROOT / "data" / "images"
 
 
 class SituationRequest(BaseModel):
@@ -25,6 +30,7 @@ class MemeCandidate(BaseModel):
     caption_idea: str
     boxes: list[str]
     confidence: float
+    image_url: str = ""
 
 
 class MemeSearchResponse(BaseModel):
@@ -165,6 +171,21 @@ def apply_template_box_counts(
     return normalized
 
 
+def apply_image_urls(
+    candidates: list[MemeCandidate],
+    ranked_templates: list[tuple[MemeTemplate, float]],
+) -> list[MemeCandidate]:
+    templates = template_by_name(ranked_templates)
+    result = []
+    for candidate in candidates:
+        template = templates.get(candidate.name)
+        if template and template.image_path:
+            result.append(candidate.model_copy(update={"image_url": f"/images/{template.image_path.name}"}))
+        else:
+            result.append(candidate)
+    return result
+
+
 def ask_ollama_for_candidates(
     situation: str,
     ranked_templates: list[tuple[MemeTemplate, float]],
@@ -240,6 +261,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+if IMAGES_DIR.exists():
+    app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
+
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
@@ -279,6 +303,7 @@ def search_memes(request: SituationRequest) -> MemeSearchResponse:
     if candidates:
         candidates = apply_retrieval_scores(candidates, ranked_templates)
         candidates = apply_template_box_counts(candidates, ranked_templates)
+        candidates = apply_image_urls(candidates, ranked_templates)
         return MemeSearchResponse(
             situation=situation,
             candidates=candidates,
@@ -287,9 +312,11 @@ def search_memes(request: SituationRequest) -> MemeSearchResponse:
             retrieval=retrieval,
         )
 
+    fallback = fallback_candidates(ranked_templates)
+    fallback = apply_image_urls(fallback, ranked_templates)
     return MemeSearchResponse(
         situation=situation,
-        candidates=fallback_candidates(ranked_templates),
+        candidates=fallback,
         source="fallback",
         model=CHAT_MODEL,
         retrieval=retrieval,

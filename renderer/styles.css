@@ -180,6 +180,16 @@ button:hover {
   position: relative;
   min-height: 220px;
   padding: 18px;
+  overflow: hidden;
+}
+
+.template-image {
+  display: block;
+  width: calc(100% + 36px);
+  margin: -18px -18px 16px -18px;
+  height: 180px;
+  object-fit: contain;
+  background: #1a1917;
 }
 
 .candidate-score {

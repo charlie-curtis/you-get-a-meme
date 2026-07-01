@@ -26,6 +26,15 @@ function renderCandidates(candidates) {
   for (const candidate of candidates) {
     const node = candidateTemplate.content.firstElementChild.cloneNode(true);
     node.querySelector(".candidate-score strong").textContent = `${Math.round(candidate.confidence * 100)}%`;
+
+    const img = node.querySelector(".template-image");
+    if (candidate.image_url) {
+      img.src = `${apiBaseUrl}${candidate.image_url}`;
+      img.alt = candidate.name;
+    } else {
+      img.remove();
+    }
+
     node.querySelector("h3").textContent = candidate.name;
     node.querySelector(".fit").textContent = candidate.fit;
     node.querySelector(".caption").textContent = candidate.caption_idea;

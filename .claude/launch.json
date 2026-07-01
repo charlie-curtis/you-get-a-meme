@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "renderer",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "5174", "--directory", "/Users/charliecurtis/Code/you-get-a-meme/renderer"],
+      "port": 5174
+    }
+  ]
+}
