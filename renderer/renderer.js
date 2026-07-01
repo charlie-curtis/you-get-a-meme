@@ -29,6 +29,13 @@ function renderCandidates(candidates) {
     node.querySelector("h3").textContent = candidate.name;
     node.querySelector(".fit").textContent = candidate.fit;
     node.querySelector(".caption").textContent = candidate.caption_idea;
+    const boxes = node.querySelector(".boxes");
+    boxes.replaceChildren();
+    for (const boxText of candidate.boxes ?? []) {
+      const item = document.createElement("li");
+      item.textContent = boxText || "No text suggested";
+      boxes.append(item);
+    }
     resultsGrid.append(node);
   }
 }

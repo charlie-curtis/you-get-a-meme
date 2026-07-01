@@ -3,7 +3,13 @@ import json
 from you_get_a_meme import __version__
 from you_get_a_meme.catalog import load_templates
 from you_get_a_meme.embeddings import cosine_similarity, rank_templates_by_embedding
-from you_get_a_meme.server import MemeCandidate, app, apply_retrieval_scores, parse_llm_candidates
+from you_get_a_meme.server import (
+    MemeCandidate,
+    app,
+    apply_retrieval_scores,
+    apply_template_box_counts,
+    parse_llm_candidates,
+)
 
 
 def test_health() -> None:
@@ -25,6 +31,7 @@ def test_load_templates_from_text_file() -> None:
         "two-buttons",
     ]
     assert templates[0].name == "Drake Hotline Bling"
+    assert templates[0].box_labels == ("rejected option", "approved option")
     assert "preference" in templates[0].tags
 
 
@@ -63,6 +70,7 @@ def test_parse_llm_candidates() -> None:
               "name": "Two Buttons",
               "fit": "A stressful choice.",
               "caption_idea": "Button one. Button two.",
+              "boxes": ["Ship it", "Rewrite everything", "Me"],
               "confidence": 0.87
             }
           ]
@@ -72,6 +80,7 @@ def test_parse_llm_candidates() -> None:
 
     assert len(candidates) == 1
     assert candidates[0].name == "Two Buttons"
+    assert candidates[0].boxes == ["Ship it", "Rewrite everything", "Me"]
 
 
 def test_parse_llm_candidates_accepts_missing_confidence() -> None:
@@ -82,7 +91,8 @@ def test_parse_llm_candidates_accepts_missing_confidence() -> None:
             {
               "name": "Two Buttons",
               "fit": "A stressful choice.",
-              "caption_idea": "Button one. Button two."
+              "caption_idea": "Button one. Button two.",
+              "boxes": ["Ship it", "Rewrite everything", "Me"]
             }
           ]
         }
@@ -100,6 +110,7 @@ def test_apply_retrieval_scores_overrides_model_confidence() -> None:
             name="Two Buttons",
             fit="A stressful choice.",
             caption_idea="Button one. Button two.",
+            boxes=["Ship it", "Rewrite everything", "Me"],
             confidence=0.99,
         )
     ]
@@ -107,6 +118,23 @@ def test_apply_retrieval_scores_overrides_model_confidence() -> None:
     scored = apply_retrieval_scores(candidates, [(two_buttons, 0.42)])
 
     assert scored[0].confidence == 0.42
+
+
+def test_apply_template_box_counts_trims_extra_boxes() -> None:
+    drake = next(template for template in load_templates() if template.name == "Drake Hotline Bling")
+    candidates = [
+        MemeCandidate(
+            name="Drake Hotline Bling",
+            fit="Reject one thing for another.",
+            caption_idea="Top and bottom text.",
+            boxes=["No", "Yes", "Extra"],
+            confidence=0,
+        )
+    ]
+
+    normalized = apply_template_box_counts(candidates, [(drake, 0.8)])
+
+    assert normalized[0].boxes == ["No", "Yes"]
 
 
 def test_parse_llm_candidates_normalizes_common_model_shapes() -> None:
@@ -121,6 +149,7 @@ def test_parse_llm_candidates_normalizes_common_model_shapes() -> None:
                 "When a tiny CSS fix breaks the whole layout",
                 "The important task vs the tempting quick fix"
               ],
+              "boxes": {"box_1": "Important work", "box_2": "Me", "box_3": "Shiny tool"},
               "confidence": 0.9
             }
           ]
@@ -132,6 +161,7 @@ def test_parse_llm_candidates_normalizes_common_model_shapes() -> None:
     assert candidates[0].name == "Distracted Boyfriend"
     assert "strong fit" in candidates[0].fit
     assert " / " in candidates[0].caption_idea
+    assert candidates[0].boxes == ["Important work", "Me", "Shiny tool"]
 
 
 def test_search_falls_back_when_ollama_is_unavailable(monkeypatch) -> None:

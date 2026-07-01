@@ -23,6 +23,7 @@ class MemeCandidate(BaseModel):
     name: str
     fit: str
     caption_idea: str
+    boxes: list[str]
     confidence: float
 
 
@@ -46,6 +47,7 @@ def fallback_candidates(ranked_templates: list[tuple[MemeTemplate, float]] | Non
                 name=template.name,
                 fit=template.description,
                 caption_idea=template.caption_pattern,
+                boxes=fallback_boxes(template),
                 confidence=max(0, min(1, score)),
             )
             for template, score in ranked_templates
@@ -56,10 +58,17 @@ def fallback_candidates(ranked_templates: list[tuple[MemeTemplate, float]] | Non
             name=template.name,
             fit=template.description,
             caption_idea=template.caption_pattern,
+            boxes=fallback_boxes(template),
             confidence=0.7,
         )
         for template in load_templates()
     ]
+
+
+def fallback_boxes(template: MemeTemplate) -> list[str]:
+    if template.box_labels:
+        return [f"[{label}]" for label in template.box_labels[: template.box_count]]
+    return [f"[box {index + 1}]" for index in range(template.box_count)]
 
 
 def template_catalog_for_prompt(ranked_templates: list[tuple[MemeTemplate, float]]) -> str:
@@ -107,11 +116,23 @@ def normalize_llm_candidate(candidate: dict) -> dict:
     if isinstance(caption_idea, list):
         normalized["caption_idea"] = " / ".join(str(item) for item in caption_idea if item)
 
+    boxes = normalized.get("boxes")
+    if isinstance(boxes, dict):
+        normalized["boxes"] = [str(value) for _, value in sorted(boxes.items())]
+    elif isinstance(boxes, list):
+        normalized["boxes"] = [str(item) for item in boxes if item]
+    else:
+        normalized["boxes"] = []
+
     return normalized
 
 
 def candidate_score_by_name(ranked_templates: list[tuple[MemeTemplate, float]]) -> dict[str, float]:
     return {template.name: max(0, min(1, score)) for template, score in ranked_templates}
+
+
+def template_by_name(ranked_templates: list[tuple[MemeTemplate, float]]) -> dict[str, MemeTemplate]:
+    return {template.name: template for template, _score in ranked_templates}
 
 
 def apply_retrieval_scores(
@@ -125,6 +146,25 @@ def apply_retrieval_scores(
     ]
 
 
+def apply_template_box_counts(
+    candidates: list[MemeCandidate],
+    ranked_templates: list[tuple[MemeTemplate, float]],
+) -> list[MemeCandidate]:
+    templates = template_by_name(ranked_templates)
+    normalized = []
+    for candidate in candidates:
+        template = templates.get(candidate.name)
+        if template is None:
+            normalized.append(candidate)
+            continue
+
+        boxes = candidate.boxes[: template.box_count]
+        while len(boxes) < template.box_count:
+            boxes.append("")
+        normalized.append(candidate.model_copy(update={"boxes": boxes}))
+    return normalized
+
+
 def ask_ollama_for_candidates(
     situation: str,
     ranked_templates: list[tuple[MemeTemplate, float]],
@@ -133,9 +173,12 @@ def ask_ollama_for_candidates(
         "You pick meme templates for a user's situation. "
         "Choose only from the provided templates. "
         "Return strict JSON with one key, candidates. "
-        "Each candidate must have name, fit, and caption_idea. "
+        "Each candidate must have name, fit, caption_idea, and boxes. "
         "The fit value must be a short sentence, not a boolean. "
         "The caption_idea value must be one short string, not a list. "
+        "The boxes value must be an array of strings. "
+        "The boxes array length must match the template's text box count. "
+        "Every boxes item must be non-empty and must follow the template's box labels in order. "
         "Do not include confidence scores."
     )
     user_prompt = (
@@ -143,7 +186,9 @@ def ask_ollama_for_candidates(
         f"Available templates, already ranked by embedding search:\n"
         f"{template_catalog_for_prompt(ranked_templates)}\n\n"
         "Return the 3 best matches as JSON. Write fresh caption ideas for this exact situation. "
-        "Use only these keys for each candidate: name, fit, caption_idea."
+        "Use only these keys for each candidate: name, fit, caption_idea, boxes. "
+        "For example, if a template says box labels are first hard choice, second hard choice, "
+        "anxious decision maker, return boxes in exactly that order."
     )
 
     response = httpx.post(
@@ -215,6 +260,7 @@ def search_memes(request: SituationRequest) -> MemeSearchResponse:
 
     if candidates:
         candidates = apply_retrieval_scores(candidates, ranked_templates)
+        candidates = apply_template_box_counts(candidates, ranked_templates)
         return MemeSearchResponse(
             situation=situation,
             candidates=candidates,

@@ -243,6 +243,18 @@ h3 {
   line-height: 1.35;
 }
 
+.boxes {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.boxes li {
+  color: #26231f;
+  line-height: 1.35;
+}
+
 .empty-state {
   grid-column: 1 / -1;
   display: grid;
