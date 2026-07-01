@@ -20,6 +20,7 @@ dev = [
 
 [project.scripts]
 you-get-a-meme = "you_get_a_meme.app:main"
+you-get-a-meme-build-embeddings = "you_get_a_meme.embeddings:main"
 
 [build-system]
 requires = ["hatchling"]

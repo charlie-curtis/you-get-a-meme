@@ -16,9 +16,10 @@ You Get a Meme is a local-first meme finder and generator. The app helps you des
 
 - Python app backend
 - FastAPI for local API routes
-- SQLite for template metadata
+- `data/templates.txt` for curated template metadata
 - Pillow for meme rendering
 - Ollama with `llama3.2:3b` for local LLM calls
+- Ollama with `mxbai-embed-large` for local embeddings
 - Electron for the desktop window
 
 ## First Milestone
@@ -50,3 +51,18 @@ ollama pull llama3.2:3b
 ```
 
 If Ollama is unavailable or the model call times out, the app falls back to starter template results instead of hanging.
+
+Template metadata lives in:
+
+```bash
+data/templates.txt
+```
+
+Build the local embedding cache after changing template descriptions:
+
+```bash
+ollama pull mxbai-embed-large
+you-get-a-meme-build-embeddings
+```
+
+The generated cache is written to `data/cache/template_embeddings.json` and is not tracked by Git.

@@ -10,6 +10,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from you_get_a_meme.catalog import load_templates
+
 
 class SituationRequest(BaseModel):
     situation: Annotated[str, Field(min_length=3, max_length=400)]
@@ -29,37 +31,25 @@ class MemeSearchResponse(BaseModel):
     model: str
 
 
-TEMPLATE_SEEDS = [
-    MemeCandidate(
-        name="Drake Hotline Bling",
-        fit="Rejecting the obvious bad option in favor of the surprisingly better one.",
-        caption_idea="Top: forcing the thing that never works. Bottom: doing the tiny sane fix.",
-        confidence=0.82,
-    ),
-    MemeCandidate(
-        name="Distracted Boyfriend",
-        fit="A person or team abandoning what they should focus on for a tempting distraction.",
-        caption_idea="Partner: the important task. Boyfriend: you. Other person: the shiny distraction.",
-        confidence=0.76,
-    ),
-    MemeCandidate(
-        name="Two Buttons",
-        fit="Choosing between two stressful, mutually awkward options.",
-        caption_idea="Button one: ship it. Button two: rewrite the whole thing at midnight.",
-        confidence=0.72,
-    ),
-]
-
 OLLAMA_URL = os.environ.get("YGAM_OLLAMA_URL", "http://127.0.0.1:11434")
 CHAT_MODEL = os.environ.get("YGAM_CHAT_MODEL", "llama3.2:3b")
 OLLAMA_TIMEOUT_SECONDS = float(os.environ.get("YGAM_OLLAMA_TIMEOUT_SECONDS", "20"))
 
 
+def fallback_candidates() -> list[MemeCandidate]:
+    return [
+        MemeCandidate(
+            name=template.name,
+            fit=template.description,
+            caption_idea=template.caption_pattern,
+            confidence=0.7,
+        )
+        for template in load_templates()
+    ]
+
+
 def template_catalog_for_prompt() -> str:
-    return "\n".join(
-        f"- {template.name}: {template.fit} Caption pattern: {template.caption_idea}"
-        for template in TEMPLATE_SEEDS
-    )
+    return "\n".join(template.prompt_line for template in load_templates())
 
 
 def parse_llm_candidates(content: str) -> list[MemeCandidate]:
@@ -185,7 +175,7 @@ def search_memes(request: SituationRequest) -> MemeSearchResponse:
 
     return MemeSearchResponse(
         situation=situation,
-        candidates=TEMPLATE_SEEDS,
+        candidates=fallback_candidates(),
         source="fallback",
         model=CHAT_MODEL,
     )

@@ -1,4 +1,5 @@
 from you_get_a_meme import __version__
+from you_get_a_meme.catalog import load_templates
 from you_get_a_meme.server import app, parse_llm_candidates
 
 
@@ -10,6 +11,18 @@ def test_health() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_load_templates_from_text_file() -> None:
+    templates = load_templates()
+
+    assert [template.id for template in templates] == [
+        "drake-hotline-bling",
+        "distracted-boyfriend",
+        "two-buttons",
+    ]
+    assert templates[0].name == "Drake Hotline Bling"
+    assert "preference" in templates[0].tags
 
 
 def test_parse_llm_candidates() -> None:

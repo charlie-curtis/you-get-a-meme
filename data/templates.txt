@@ -1,0 +1,20 @@
+[drake-hotline-bling]
+name = Drake Hotline Bling
+description = Rejecting an obvious bad option in favor of a better, smarter, or funnier alternative.
+caption_pattern = Top: the thing being rejected. Bottom: the thing being approved.
+tags = preference, rejection, comparison, better option
+box_count = 2
+
+[distracted-boyfriend]
+name = Distracted Boyfriend
+description = Someone abandoning what they should focus on because a tempting distraction appears.
+caption_pattern = Partner: the responsible focus. Boyfriend: the person or team being tempted. Other person: the tempting distraction.
+tags = distraction, temptation, priorities, bad decisions
+box_count = 3
+
+[two-buttons]
+name = Two Buttons
+description = A person sweating while choosing between two stressful, awkward, or mutually bad options.
+caption_pattern = Button one: first hard choice. Button two: second hard choice. Person: the anxious decision maker.
+tags = choice, dilemma, stress, tradeoff
+box_count = 3
