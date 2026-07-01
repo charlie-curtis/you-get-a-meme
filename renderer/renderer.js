@@ -25,7 +25,7 @@ function renderCandidates(candidates) {
 
   for (const candidate of candidates) {
     const node = candidateTemplate.content.firstElementChild.cloneNode(true);
-    node.querySelector(".candidate-score").textContent = `${Math.round(candidate.confidence * 100)}%`;
+    node.querySelector(".candidate-score strong").textContent = `${Math.round(candidate.confidence * 100)}%`;
     node.querySelector("h3").textContent = candidate.name;
     node.querySelector(".fit").textContent = candidate.fit;
     node.querySelector(".caption").textContent = candidate.caption_idea;

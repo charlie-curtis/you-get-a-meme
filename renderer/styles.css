@@ -187,16 +187,44 @@ button:hover {
   top: 16px;
   right: 16px;
   border-radius: 999px;
-  padding: 5px 9px;
+  padding: 5px 10px;
   background: #1f6d79;
   color: #ffffff;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 850;
+}
+
+.candidate-score span {
+  margin-right: 4px;
+  font-weight: 650;
+  opacity: 0.82;
+}
+
+.candidate-score strong {
+  font-weight: 900;
+}
+
+.field-group {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.template-name {
+  margin-top: 0;
+}
+
+.field-label {
+  color: #1f6d79;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 h3 {
   max-width: calc(100% - 56px);
-  margin: 0 0 14px;
+  margin: 0;
   font-size: 1.08rem;
 }
 
@@ -207,7 +235,7 @@ h3 {
 }
 
 .caption {
-  margin: 18px 0 0;
+  margin: 0;
   border-left: 3px solid #d44d2f;
   padding-left: 12px;
   color: #26231f;
