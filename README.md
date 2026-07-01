@@ -18,7 +18,7 @@ You Get a Meme is a local-first meme finder and generator. The app helps you des
 - FastAPI for local API routes
 - SQLite for template metadata
 - Pillow for meme rendering
-- Ollama for local LLM calls
+- Ollama with `llama3.2:3b` for local LLM calls
 - Electron for the desktop window
 
 ## First Milestone
@@ -41,3 +41,12 @@ npm start
 ```
 
 Electron launches the Python API locally and loads the renderer UI. The first implementation slice has placeholder meme matches; the next slice should replace those with the template metadata model and an Ollama client.
+
+The app expects Ollama to be running separately when you want model-backed results:
+
+```bash
+ollama serve
+ollama pull llama3.2:3b
+```
+
+If Ollama is unavailable or the model call times out, the app falls back to starter template results instead of hanging.

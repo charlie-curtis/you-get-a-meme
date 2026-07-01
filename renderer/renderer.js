@@ -39,7 +39,9 @@ async function checkHealth() {
     if (!response.ok) {
       throw new Error("Backend did not return OK");
     }
-    setStatus("Local API", "ok");
+    const ollamaResponse = await fetch(`${apiBaseUrl}/api/ollama/health`);
+    const ollama = await ollamaResponse.json();
+    setStatus(ollama.status === "ok" ? ollama.model : "No Ollama", ollama.status === "ok" ? "ok" : "busy");
     emptyResults("Type a situation to find a matching meme format.");
   } catch {
     setStatus("Offline", "error");
@@ -73,9 +75,9 @@ form.addEventListener("submit", async (event) => {
     }
 
     const payload = await response.json();
-    resultsTitle.textContent = "Best fits";
+    resultsTitle.textContent = payload.source === "ollama" ? `${payload.model} picks` : "Fallback picks";
     renderCandidates(payload.candidates);
-    setStatus("Local API", "ok");
+    setStatus(payload.source === "ollama" ? payload.model : "Fallback", payload.source === "ollama" ? "ok" : "busy");
   } catch {
     resultsTitle.textContent = "Unavailable";
     emptyResults("Could not reach the local Python API.");
