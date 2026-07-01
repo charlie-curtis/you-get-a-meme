@@ -10,7 +10,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from you_get_a_meme.catalog import MemeTemplate
 from you_get_a_meme.catalog import load_templates
+from you_get_a_meme.embeddings import EmbeddingCacheUnavailable, rank_templates_by_embedding
 
 
 class SituationRequest(BaseModel):
@@ -29,6 +31,7 @@ class MemeSearchResponse(BaseModel):
     candidates: list[MemeCandidate]
     source: str
     model: str
+    retrieval: str
 
 
 OLLAMA_URL = os.environ.get("YGAM_OLLAMA_URL", "http://127.0.0.1:11434")
@@ -36,7 +39,18 @@ CHAT_MODEL = os.environ.get("YGAM_CHAT_MODEL", "llama3.2:3b")
 OLLAMA_TIMEOUT_SECONDS = float(os.environ.get("YGAM_OLLAMA_TIMEOUT_SECONDS", "20"))
 
 
-def fallback_candidates() -> list[MemeCandidate]:
+def fallback_candidates(ranked_templates: list[tuple[MemeTemplate, float]] | None = None) -> list[MemeCandidate]:
+    if ranked_templates:
+        return [
+            MemeCandidate(
+                name=template.name,
+                fit=template.description,
+                caption_idea=template.caption_pattern,
+                confidence=max(0, min(1, score)),
+            )
+            for template, score in ranked_templates
+        ]
+
     return [
         MemeCandidate(
             name=template.name,
@@ -48,8 +62,11 @@ def fallback_candidates() -> list[MemeCandidate]:
     ]
 
 
-def template_catalog_for_prompt() -> str:
-    return "\n".join(template.prompt_line for template in load_templates())
+def template_catalog_for_prompt(ranked_templates: list[tuple[MemeTemplate, float]]) -> str:
+    return "\n".join(
+        f"{template.prompt_line} Retrieval score: {score:.3f}"
+        for template, score in ranked_templates
+    )
 
 
 def parse_llm_candidates(content: str) -> list[MemeCandidate]:
@@ -92,7 +109,10 @@ def normalize_llm_candidate(candidate: dict) -> dict:
     return normalized
 
 
-def ask_ollama_for_candidates(situation: str) -> list[MemeCandidate]:
+def ask_ollama_for_candidates(
+    situation: str,
+    ranked_templates: list[tuple[MemeTemplate, float]],
+) -> list[MemeCandidate]:
     system_prompt = (
         "You pick meme templates for a user's situation. "
         "Choose only from the provided templates. "
@@ -104,7 +124,8 @@ def ask_ollama_for_candidates(situation: str) -> list[MemeCandidate]:
     )
     user_prompt = (
         f"Situation: {situation}\n\n"
-        f"Available templates:\n{template_catalog_for_prompt()}\n\n"
+        f"Available templates, already ranked by embedding search:\n"
+        f"{template_catalog_for_prompt(ranked_templates)}\n\n"
         "Return the 3 best matches as JSON. Write fresh caption ideas for this exact situation."
     )
 
@@ -159,9 +180,19 @@ def ollama_health() -> dict[str, str]:
 @app.post("/api/memes/search")
 def search_memes(request: SituationRequest) -> MemeSearchResponse:
     situation = request.situation.strip()
+    retrieval = "all-templates"
 
     try:
-        candidates = ask_ollama_for_candidates(situation)
+        ranked_templates = rank_templates_by_embedding(situation, limit=8)
+        if ranked_templates:
+            retrieval = "embeddings"
+        else:
+            ranked_templates = [(template, 0.7) for template in load_templates()]
+    except (EmbeddingCacheUnavailable, httpx.HTTPError, ValueError):
+        ranked_templates = [(template, 0.7) for template in load_templates()]
+
+    try:
+        candidates = ask_ollama_for_candidates(situation, ranked_templates)
     except httpx.HTTPError:
         candidates = []
 
@@ -171,13 +202,15 @@ def search_memes(request: SituationRequest) -> MemeSearchResponse:
             candidates=candidates,
             source="ollama",
             model=CHAT_MODEL,
+            retrieval=retrieval,
         )
 
     return MemeSearchResponse(
         situation=situation,
-        candidates=fallback_candidates(),
+        candidates=fallback_candidates(ranked_templates),
         source="fallback",
         model=CHAT_MODEL,
+        retrieval=retrieval,
     )
 
 

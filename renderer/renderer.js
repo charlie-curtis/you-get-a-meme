@@ -75,7 +75,9 @@ form.addEventListener("submit", async (event) => {
     }
 
     const payload = await response.json();
-    resultsTitle.textContent = payload.source === "ollama" ? `${payload.model} picks` : "Fallback picks";
+    const retrievalLabel = payload.retrieval === "embeddings" ? "embedding search" : "template catalog";
+    resultsTitle.textContent =
+      payload.source === "ollama" ? `${payload.model} picks via ${retrievalLabel}` : "Fallback picks";
     renderCandidates(payload.candidates);
     setStatus(payload.source === "ollama" ? payload.model : "Fallback", payload.source === "ollama" ? "ok" : "busy");
   } catch {

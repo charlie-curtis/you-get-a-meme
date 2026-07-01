@@ -1,5 +1,8 @@
+import json
+
 from you_get_a_meme import __version__
 from you_get_a_meme.catalog import load_templates
+from you_get_a_meme.embeddings import cosine_similarity, rank_templates_by_embedding
 from you_get_a_meme.server import app, parse_llm_candidates
 
 
@@ -23,6 +26,32 @@ def test_load_templates_from_text_file() -> None:
     ]
     assert templates[0].name == "Drake Hotline Bling"
     assert "preference" in templates[0].tags
+
+
+def test_cosine_similarity() -> None:
+    assert cosine_similarity([1, 0], [1, 0]) == 1
+    assert cosine_similarity([1, 0], [0, 1]) == 0
+
+
+def test_rank_templates_by_embedding(tmp_path, monkeypatch) -> None:
+    cache_path = tmp_path / "embeddings.json"
+    cache_path.write_text(
+        json.dumps(
+            {
+                "model": "test",
+                "templates": [
+                    {"id": "drake-hotline-bling", "embedding": [1, 0]},
+                    {"id": "two-buttons", "embedding": [0, 1]},
+                ],
+            }
+        )
+    )
+    monkeypatch.setattr("you_get_a_meme.embeddings.embed_text", lambda _text: [0, 1])
+
+    ranked = rank_templates_by_embedding("hard choice", cache_path=cache_path)
+
+    assert ranked[0][0].id == "two-buttons"
+    assert ranked[0][1] == 1
 
 
 def test_parse_llm_candidates() -> None:
@@ -73,7 +102,7 @@ def test_parse_llm_candidates_normalizes_common_model_shapes() -> None:
 def test_search_falls_back_when_ollama_is_unavailable(monkeypatch) -> None:
     from fastapi.testclient import TestClient
 
-    def unavailable(_situation: str):
+    def unavailable(_situation: str, _ranked_templates):
         return []
 
     monkeypatch.setattr("you_get_a_meme.server.ask_ollama_for_candidates", unavailable)
@@ -84,6 +113,7 @@ def test_search_falls_back_when_ollama_is_unavailable(monkeypatch) -> None:
     assert response.status_code == 200
     assert response.json()["source"] == "fallback"
     assert response.json()["model"] == "llama3.2:3b"
+    assert response.json()["retrieval"] in {"embeddings", "all-templates"}
     assert len(response.json()["candidates"]) == 3
 
 

@@ -66,3 +66,10 @@ you-get-a-meme-build-embeddings
 ```
 
 The generated cache is written to `data/cache/template_embeddings.json` and is not tracked by Git.
+
+Search flow:
+
+1. Embed the user's situation with `mxbai-embed-large`.
+2. Compare it against cached template embeddings.
+3. Send the best-ranked templates to `llama3.2:3b`.
+4. Return the model's meme picks and caption ideas to the Electron UI.
