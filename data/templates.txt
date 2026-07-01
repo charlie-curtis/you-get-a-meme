@@ -3,6 +3,7 @@ name = Drake Hotline Bling
 description = Rejecting an obvious bad option in favor of a better, smarter, or funnier alternative.
 caption_pattern = Top: the thing being rejected. Bottom: the thing being approved.
 box_labels = rejected option, approved option
+humor_rule = For funnier results, reject the boring or responsible option and approve the chaotic, self-sabotaging, or absurd option when the situation supports it.
 tags = preference, rejection, comparison, better option
 box_count = 2
 
@@ -11,6 +12,7 @@ name = Distracted Boyfriend
 description = Someone abandoning what they should focus on because a tempting distraction appears.
 caption_pattern = Partner: the responsible focus. Boyfriend: the person or team being tempted. Other person: the tempting distraction.
 box_labels = responsible focus, tempted person, tempting distraction
+humor_rule = Make the tempting distraction specific, silly, and obviously worse for the person being tempted.
 tags = distraction, temptation, priorities, bad decisions
 box_count = 3
 
@@ -19,5 +21,6 @@ name = Two Buttons
 description = A person sweating while choosing between two stressful, awkward, or mutually bad options.
 caption_pattern = Button one: first hard choice. Button two: second hard choice. Person: the anxious decision maker.
 box_labels = first hard choice, second hard choice, anxious decision maker
+humor_rule = Both choices should feel uncomfortable, embarrassing, or high-stakes; avoid making one option obviously correct.
 tags = choice, dilemma, stress, tradeoff
 box_count = 3

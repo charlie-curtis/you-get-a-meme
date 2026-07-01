@@ -172,6 +172,8 @@ def ask_ollama_for_candidates(
     system_prompt = (
         "You pick meme templates for a user's situation. "
         "Choose only from the provided templates. "
+        "Optimize for funny meme logic, not sensible advice. "
+        "Prefer irony, self-own choices, exaggeration, and relatable bad decisions. "
         "Return strict JSON with one key, candidates. "
         "Each candidate must have name, fit, caption_idea, and boxes. "
         "The fit value must be a short sentence, not a boolean. "
@@ -179,6 +181,7 @@ def ask_ollama_for_candidates(
         "The boxes value must be an array of strings. "
         "The boxes array length must match the template's text box count. "
         "Every boxes item must be non-empty and must follow the template's box labels in order. "
+        "Follow each template's humor rule even when it conflicts with sensible advice. "
         "Do not include confidence scores."
     )
     user_prompt = (
@@ -186,6 +189,10 @@ def ask_ollama_for_candidates(
         f"Available templates, already ranked by embedding search:\n"
         f"{template_catalog_for_prompt(ranked_templates)}\n\n"
         "Return the 3 best matches as JSON. Write fresh caption ideas for this exact situation. "
+        "Make the box text punchy and meme-ready, not explanatory. "
+        "Preserve the user's concrete choices when they provide them. "
+        "Example: for 'working at 4 AM vs getting fired', Drake boxes should be "
+        "['Working at 4 AM', 'Getting fired'] because approving getting fired is the joke. "
         "Use only these keys for each candidate: name, fit, caption_idea, boxes. "
         "For example, if a template says box labels are first hard choice, second hard choice, "
         "anxious decision maker, return boxes in exactly that order."
@@ -210,7 +217,18 @@ def ask_ollama_for_candidates(
     )
     response.raise_for_status()
     content = response.json()["message"]["content"]
-    return parse_llm_candidates(content)
+    return fill_missing_caption_ideas(parse_llm_candidates(content))
+
+
+def fill_missing_caption_ideas(candidates: list[MemeCandidate]) -> list[MemeCandidate]:
+    filled = []
+    for candidate in candidates:
+        if candidate.caption_idea.strip():
+            filled.append(candidate)
+            continue
+        fallback = " / ".join(box for box in candidate.boxes if box.strip())
+        filled.append(candidate.model_copy(update={"caption_idea": fallback}))
+    return filled
 
 
 app = FastAPI(title="You Get a Meme API")

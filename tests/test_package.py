@@ -32,6 +32,7 @@ def test_load_templates_from_text_file() -> None:
     ]
     assert templates[0].name == "Drake Hotline Bling"
     assert templates[0].box_labels == ("rejected option", "approved option")
+    assert "chaotic" in templates[0].humor_rule
     assert "preference" in templates[0].tags
 
 

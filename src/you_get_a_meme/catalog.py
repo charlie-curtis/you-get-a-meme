@@ -16,6 +16,7 @@ class MemeTemplate:
     description: str
     caption_pattern: str
     box_labels: tuple[str, ...]
+    humor_rule: str
     tags: tuple[str, ...]
     box_count: int
 
@@ -26,6 +27,7 @@ class MemeTemplate:
             f"{self.name}. {self.description} "
             f"Caption pattern: {self.caption_pattern} "
             f"Box labels: {', '.join(self.box_labels)}. "
+            f"Humor rule: {self.humor_rule} "
             f"Tags: {tags}. Text boxes: {self.box_count}."
         )
 
@@ -35,6 +37,7 @@ class MemeTemplate:
             f"- {self.name}: {self.description} "
             f"Caption pattern: {self.caption_pattern} "
             f"Box labels, in order: {', '.join(self.box_labels)}. "
+            f"Humor rule: {self.humor_rule} "
             f"Text boxes: {self.box_count}. Tags: {', '.join(self.tags)}"
         )
 
@@ -55,6 +58,7 @@ def load_templates(path: Path = DEFAULT_TEMPLATE_PATH) -> list[MemeTemplate]:
                 box_labels=tuple(
                     label.strip() for label in section.get("box_labels", "").split(",") if label.strip()
                 ),
+                humor_rule=section.get("humor_rule", "").strip(),
                 tags=tuple(tag.strip() for tag in section.get("tags", "").split(",") if tag.strip()),
                 box_count=section.getint("box_count", fallback=2),
             )
