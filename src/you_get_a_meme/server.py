@@ -93,6 +93,7 @@ def parse_llm_candidates(content: str) -> list[MemeCandidate]:
 
 def normalize_llm_candidate(candidate: dict) -> dict:
     normalized = dict(candidate)
+    normalized.setdefault("confidence", 0)
 
     fit = normalized.get("fit")
     if isinstance(fit, bool):
@@ -109,6 +110,21 @@ def normalize_llm_candidate(candidate: dict) -> dict:
     return normalized
 
 
+def candidate_score_by_name(ranked_templates: list[tuple[MemeTemplate, float]]) -> dict[str, float]:
+    return {template.name: max(0, min(1, score)) for template, score in ranked_templates}
+
+
+def apply_retrieval_scores(
+    candidates: list[MemeCandidate],
+    ranked_templates: list[tuple[MemeTemplate, float]],
+) -> list[MemeCandidate]:
+    scores = candidate_score_by_name(ranked_templates)
+    return [
+        candidate.model_copy(update={"confidence": scores.get(candidate.name, candidate.confidence)})
+        for candidate in candidates
+    ]
+
+
 def ask_ollama_for_candidates(
     situation: str,
     ranked_templates: list[tuple[MemeTemplate, float]],
@@ -117,16 +133,17 @@ def ask_ollama_for_candidates(
         "You pick meme templates for a user's situation. "
         "Choose only from the provided templates. "
         "Return strict JSON with one key, candidates. "
-        "Each candidate must have name, fit, caption_idea, and confidence. "
+        "Each candidate must have name, fit, and caption_idea. "
         "The fit value must be a short sentence, not a boolean. "
         "The caption_idea value must be one short string, not a list. "
-        "Confidence is a number from 0 to 1."
+        "Do not include confidence scores."
     )
     user_prompt = (
         f"Situation: {situation}\n\n"
         f"Available templates, already ranked by embedding search:\n"
         f"{template_catalog_for_prompt(ranked_templates)}\n\n"
-        "Return the 3 best matches as JSON. Write fresh caption ideas for this exact situation."
+        "Return the 3 best matches as JSON. Write fresh caption ideas for this exact situation. "
+        "Use only these keys for each candidate: name, fit, caption_idea."
     )
 
     response = httpx.post(
@@ -197,6 +214,7 @@ def search_memes(request: SituationRequest) -> MemeSearchResponse:
         candidates = []
 
     if candidates:
+        candidates = apply_retrieval_scores(candidates, ranked_templates)
         return MemeSearchResponse(
             situation=situation,
             candidates=candidates,

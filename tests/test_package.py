@@ -3,7 +3,7 @@ import json
 from you_get_a_meme import __version__
 from you_get_a_meme.catalog import load_templates
 from you_get_a_meme.embeddings import cosine_similarity, rank_templates_by_embedding
-from you_get_a_meme.server import app, parse_llm_candidates
+from you_get_a_meme.server import MemeCandidate, app, apply_retrieval_scores, parse_llm_candidates
 
 
 def test_health() -> None:
@@ -72,6 +72,41 @@ def test_parse_llm_candidates() -> None:
 
     assert len(candidates) == 1
     assert candidates[0].name == "Two Buttons"
+
+
+def test_parse_llm_candidates_accepts_missing_confidence() -> None:
+    candidates = parse_llm_candidates(
+        """
+        {
+          "candidates": [
+            {
+              "name": "Two Buttons",
+              "fit": "A stressful choice.",
+              "caption_idea": "Button one. Button two."
+            }
+          ]
+        }
+        """
+    )
+
+    assert len(candidates) == 1
+    assert candidates[0].confidence == 0
+
+
+def test_apply_retrieval_scores_overrides_model_confidence() -> None:
+    two_buttons = next(template for template in load_templates() if template.name == "Two Buttons")
+    candidates = [
+        MemeCandidate(
+            name="Two Buttons",
+            fit="A stressful choice.",
+            caption_idea="Button one. Button two.",
+            confidence=0.99,
+        )
+    ]
+
+    scored = apply_retrieval_scores(candidates, [(two_buttons, 0.42)])
+
+    assert scored[0].confidence == 0.42
 
 
 def test_parse_llm_candidates_normalizes_common_model_shapes() -> None:
