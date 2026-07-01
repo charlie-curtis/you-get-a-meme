@@ -9,6 +9,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TEMPLATE_PATH = PROJECT_ROOT / "data" / "templates.txt"
 
 
+IMAGES_DIR = PROJECT_ROOT / "data" / "images"
+
+
 @dataclass(frozen=True)
 class MemeTemplate:
     id: str
@@ -19,6 +22,15 @@ class MemeTemplate:
     humor_rule: str
     tags: tuple[str, ...]
     box_count: int
+    image_url: str = ""
+
+    @property
+    def image_path(self) -> Path | None:
+        for ext in (".jpg", ".jpeg", ".png", ".gif", ".webp"):
+            candidate = IMAGES_DIR / f"{self.id}{ext}"
+            if candidate.exists():
+                return candidate
+        return None
 
     @property
     def embedding_text(self) -> str:
@@ -61,6 +73,7 @@ def load_templates(path: Path = DEFAULT_TEMPLATE_PATH) -> list[MemeTemplate]:
                 humor_rule=section.get("humor_rule", "").strip(),
                 tags=tuple(tag.strip() for tag in section.get("tags", "").split(",") if tag.strip()),
                 box_count=section.getint("box_count", fallback=2),
+                image_url=section.get("image_url", "").strip(),
             )
         )
 

@@ -17,6 +17,7 @@ build/
 
 data/*.sqlite
 data/cache/
+data/images/
 exports/
 
 .env
