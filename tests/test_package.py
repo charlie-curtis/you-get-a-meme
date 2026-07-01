@@ -32,6 +32,31 @@ def test_parse_llm_candidates() -> None:
     assert candidates[0].name == "Two Buttons"
 
 
+def test_parse_llm_candidates_normalizes_common_model_shapes() -> None:
+    candidates = parse_llm_candidates(
+        """
+        {
+          "candidates": [
+            {
+              "name": "Distracted Boyfriend",
+              "fit": true,
+              "caption_idea": [
+                "When a tiny CSS fix breaks the whole layout",
+                "The important task vs the tempting quick fix"
+              ],
+              "confidence": 0.9
+            }
+          ]
+        }
+        """
+    )
+
+    assert len(candidates) == 1
+    assert candidates[0].name == "Distracted Boyfriend"
+    assert "strong fit" in candidates[0].fit
+    assert " / " in candidates[0].caption_idea
+
+
 def test_search_falls_back_when_ollama_is_unavailable(monkeypatch) -> None:
     from fastapi.testclient import TestClient
 

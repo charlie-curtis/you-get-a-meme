@@ -76,11 +76,30 @@ def parse_llm_candidates(content: str) -> list[MemeCandidate]:
     for candidate in candidates[:3]:
         if not isinstance(candidate, dict):
             continue
+        normalized = normalize_llm_candidate(candidate)
         try:
-            parsed.append(MemeCandidate.model_validate(candidate))
+            parsed.append(MemeCandidate.model_validate(normalized))
         except ValueError:
             continue
     return parsed
+
+
+def normalize_llm_candidate(candidate: dict) -> dict:
+    normalized = dict(candidate)
+
+    fit = normalized.get("fit")
+    if isinstance(fit, bool):
+        normalized["fit"] = (
+            "The model marked this as a strong fit for the situation."
+            if fit
+            else "The model marked this as a weaker fit, but still related."
+        )
+
+    caption_idea = normalized.get("caption_idea")
+    if isinstance(caption_idea, list):
+        normalized["caption_idea"] = " / ".join(str(item) for item in caption_idea if item)
+
+    return normalized
 
 
 def ask_ollama_for_candidates(situation: str) -> list[MemeCandidate]:
@@ -89,6 +108,8 @@ def ask_ollama_for_candidates(situation: str) -> list[MemeCandidate]:
         "Choose only from the provided templates. "
         "Return strict JSON with one key, candidates. "
         "Each candidate must have name, fit, caption_idea, and confidence. "
+        "The fit value must be a short sentence, not a boolean. "
+        "The caption_idea value must be one short string, not a list. "
         "Confidence is a number from 0 to 1."
     )
     user_prompt = (
