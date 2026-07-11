@@ -23,6 +23,8 @@ class MemeTemplate:
     tags: tuple[str, ...]
     box_count: int
     image_url: str = ""
+    tone: str = ""
+    notes: str = ""
 
     @property
     def image_path(self) -> Path | None:
@@ -35,23 +37,33 @@ class MemeTemplate:
     @property
     def embedding_text(self) -> str:
         tags = ", ".join(self.tags)
-        return (
-            f"{self.name}. {self.description} "
-            f"Caption pattern: {self.caption_pattern} "
-            f"Box labels: {', '.join(self.box_labels)}. "
-            f"Humor rule: {self.humor_rule} "
-            f"Tags: {tags}. Text boxes: {self.box_count}."
-        )
+        parts = [
+            f"{self.name}. {self.description}",
+            f"Caption pattern: {self.caption_pattern}",
+            f"Box labels: {', '.join(self.box_labels)}.",
+        ]
+        if self.humor_rule:
+            parts.append(f"Humor rule: {self.humor_rule}")
+        if self.tone:
+            parts.append(f"Tone: {self.tone}.")
+        parts.append(f"Tags: {tags}. Text boxes: {self.box_count}.")
+        return " ".join(parts)
 
     @property
     def prompt_line(self) -> str:
-        return (
-            f"- {self.name}: {self.description} "
-            f"Caption pattern: {self.caption_pattern} "
-            f"Box labels, in order: {', '.join(self.box_labels)}. "
-            f"Humor rule: {self.humor_rule} "
-            f"Text boxes: {self.box_count}. Tags: {', '.join(self.tags)}"
-        )
+        parts = [
+            f"- {self.name}: {self.description}",
+            f"Caption pattern: {self.caption_pattern}",
+            f"Box labels, in order: {', '.join(self.box_labels)}.",
+        ]
+        if self.humor_rule:
+            parts.append(f"Humor rule: {self.humor_rule}")
+        if self.tone:
+            parts.append(f"Tone: {self.tone}.")
+        if self.notes:
+            parts.append(f"Caption notes: {self.notes}")
+        parts.append(f"Text boxes: {self.box_count}. Tags: {', '.join(self.tags)}")
+        return " ".join(parts)
 
 
 def load_templates(path: Path = DEFAULT_TEMPLATE_PATH) -> list[MemeTemplate]:
@@ -74,6 +86,8 @@ def load_templates(path: Path = DEFAULT_TEMPLATE_PATH) -> list[MemeTemplate]:
                 tags=tuple(tag.strip() for tag in section.get("tags", "").split(",") if tag.strip()),
                 box_count=section.getint("box_count", fallback=2),
                 image_url=section.get("image_url", "").strip(),
+                tone=section.get("tone", "").strip(),
+                notes=section.get("notes", "").strip(),
             )
         )
 

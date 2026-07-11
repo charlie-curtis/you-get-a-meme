@@ -24,16 +24,22 @@ def test_health() -> None:
 
 def test_load_templates_from_text_file() -> None:
     templates = load_templates()
+    by_id = {template.id: template for template in templates}
 
-    assert [template.id for template in templates] == [
-        "drake-hotline-bling",
-        "distracted-boyfriend",
-        "two-buttons",
-    ]
-    assert templates[0].name == "Drake Hotline Bling"
-    assert templates[0].box_labels == ("rejected option", "approved option")
-    assert "chaotic" in templates[0].humor_rule
-    assert "preference" in templates[0].tags
+    assert len(templates) >= 40
+    assert "drake-hotline-bling" in by_id
+    assert "two-buttons" in by_id
+
+    drake = by_id["drake-hotline-bling"]
+    assert drake.name == "Drake Hotline Bling"
+    assert drake.box_count == len(drake.box_labels)
+    assert drake.tags
+    assert drake.image_url.startswith("https://")
+    assert drake.tone
+
+    # box_count must match box_labels for every template
+    for template in templates:
+        assert template.box_count == len(template.box_labels), template.id
 
 
 def test_cosine_similarity() -> None:
@@ -180,7 +186,7 @@ def test_search_falls_back_when_ollama_is_unavailable(monkeypatch) -> None:
     assert response.json()["source"] == "fallback"
     assert response.json()["model"] == "llama3.2:3b"
     assert response.json()["retrieval"] in {"embeddings", "all-templates"}
-    assert len(response.json()["candidates"]) == 3
+    assert len(response.json()["candidates"]) >= 3
 
 
 def test_version() -> None:
